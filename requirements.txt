@@ -1,4 +1,8 @@
 cohere
+chromadb
 jupyterlab
 python-dotenv
 ipywidgets
+scikit-learn
+langchain
+pypdf
