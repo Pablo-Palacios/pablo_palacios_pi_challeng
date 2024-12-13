@@ -62,7 +62,10 @@ async def update_task_with_id(task_id: int, task: Task):
 
 @app.delete("/tasks/{task_id}")
 async def delete_task_with_id(task_id: int):
-    task = next((t for t in tasks_list if t.id == task_id), None)
-    tasks_list.remove(task)
-    return {"message":"Task delete"}
+    for t in tasks_list:
+        if t.id == task_id:
+            tasks_list.remove(t)
+            return {"message":"Task delete"}
+        else:
+            raise HTTPException(status_code=404, detail="Task no encontrado")
 
