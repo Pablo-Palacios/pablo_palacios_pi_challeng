@@ -43,6 +43,7 @@ def chat_ask(contexto,consulta):
 
     return prompt.message.content[0].text
 
+# TENER EN CUENTA QUE EL CONTEXTO DEBE ESTAR EN EL ROLE USER Y EL SYSTEM NO SE DEBE MODIFICAR
 
 def chat_search(contexto,consulta):
     
