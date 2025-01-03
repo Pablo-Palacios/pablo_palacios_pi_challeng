@@ -398,25 +398,10 @@ def chat_asistente_personal(consulta):
     
 
 
+def chat_traiding_bot(consulta):
+    model_ = "command-r-plus"
 
-# def get_info_mercado():
-#     endpoint = "/api/v3/exchangeInfo"
-#     response = requests.get(api_cohere + endpoint)
-#     if response.status_code == 200:
-#         body = response.json()
-        
-#         symbols = body["symbols"]
-#         active_symbols = []
-#         for symbol in symbols:
-#             if symbol["status"] == 'TRADING':
-#                 active_symbols.append(symbol)
-        
-#         top_10_coins = active_symbols[:1]
-
-#         for coin in top_10_coins:
-#             print(coin)
-#             print(coin["symbol"])
-
-
-#print(get_info_mercado())
+    aviable_fuctions = {
+        "get_information":get_data_user
+    }
 

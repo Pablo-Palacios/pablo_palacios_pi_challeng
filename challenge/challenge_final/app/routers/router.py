@@ -175,3 +175,7 @@ async def assist_personal(data: Chatbot):
             raise HTTPException(status_code=404, detail=chat)
         else:
             return {"answer":chat}
+        
+@router.post("/traiding_bot")
+async def trading_bot(data: Chatbot):
+    pass
