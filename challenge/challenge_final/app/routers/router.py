@@ -1,14 +1,13 @@
 import json
 from fastapi import APIRouter,HTTPException,UploadFile,File,Form
-from models.model import NewDocument,Embeddigns,document_list,convertir_embeddigns,chat_ask,chat_search,co,Chatbot,faker,chat_cripto,chat_asistente_data,chat_asistente_personal
+from models.model import NewDocument,Embeddigns,document_list,convertir_embeddigns,chat_ask,chat_search,co,Chatbot,faker,chat_cripto,chat_asistente_data,chat_asistente_personal,chat_traiding_bot
 from models.config import collection
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from PyPDF2 import PdfReader
-import redis
+from models.config import redis_client
 
 router = APIRouter()
 
-redis_client = redis.Redis(host="localhost", port=6379, db=0, decode_responses=True)
 
 
 @router.post("/upload")
@@ -178,4 +177,11 @@ async def assist_personal(data: Chatbot):
         
 @router.post("/traiding_bot")
 async def trading_bot(data: Chatbot):
-    pass
+    if data.question == '':
+        raise HTTPException(status_code=403, detail="Los campos no pueden estar vacios")
+    else:
+        chat = chat_traiding_bot(data.question)
+        if chat == 'No tengo conocimientos sobre ese tema.':
+            raise HTTPException(status_code=404, detail=chat)
+        else:
+            return {"answer":chat}

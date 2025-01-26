@@ -1,4 +1,7 @@
 import requests
+import json
+from fastapi import HTTPException
+
 
 
 def get_top_10_coins():
@@ -60,3 +63,48 @@ def especifict_coint_valor(criptomoneda, moneda):
         #print(data)  # Imprime los precios actuales
     else:
         return ("Error:", response.status_code)
+    
+
+
+def generate_embeddings_all(redis_client, convertir_embeddigns, collection):
+   
+    cursor = 0
+    keys_to_process = []
+
+    while True:
+        cursor, keys = redis_client.scan(cursor=cursor, match="document:*", count=100)
+        keys_to_process.extend(keys)
+        if cursor == 0:
+            break
+
+    if not keys_to_process:
+        raise HTTPException(status_code=404, detail="No hay documentos en Redis.")
+
+    processed_documents = 0
+    for key in keys_to_process:
+        doc_data = redis_client.get(key)
+        if doc_data:
+            document = json.loads(doc_data)
+            document_id = key.split(":")[1]  
+            texto = document.get("content", "")
+
+            if not texto:
+                continue
+
+            embeddings = convertir_embeddigns(texto)
+            #print(embeddings)
+
+            collection.add(
+                documents=texto,
+                ids=str(document_id),
+                embeddings=embeddings
+            )
+
+            processed_documents += 1
+
+    return {
+        "message": f"Se generaron embeddings para {processed_documents} documentos.",
+        "total_documents": processed_documents
+    }
+
+

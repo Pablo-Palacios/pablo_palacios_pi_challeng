@@ -9,6 +9,7 @@ from .config import get_data_user,add_data_user,User,query_vector,guardar_chat_a
 from fastapi import HTTPException
 import requests
 from .views import get_top_10_coins, especifict_coint_valor
+from .bot_train import get_all_trade_coint,get_coints_active_account,get_current_price,get_transaction_coint,place_buy_order,place_sell_order
 
 
 load_dotenv() 
@@ -300,7 +301,8 @@ def chat_asistente_personal(consulta):
     model_ = "command-r-plus"
 
     aviable_fuctions = {
-        "get_information":get_data_user
+        "get_information":get_data_user,
+        "top_10":get_top_10_coins
     }
         
     tools = [
@@ -402,6 +404,119 @@ def chat_traiding_bot(consulta):
     model_ = "command-r-plus"
 
     aviable_fuctions = {
-        "get_information":get_data_user
+        "top_10":get_top_10_coins,
+        "get_information_user":get_data_user,
+        "buy_coint":place_buy_order,
+        "sell_coint":place_sell_order,
+        "get_transaction":get_transaction_coint
     }
 
+    tools = [
+        {
+            "type":"function",
+            "function":{
+                "name":"get_information",
+                "description":"Retorna los datos del usuario basandose en el nombre que este registrado en la base de datos.",
+                "parameters":{
+                    "type":"object",
+                    "properties":{
+                        "nombre":{
+                            "type":"string",
+                            "description":"Nombre del usuario que esta asociado a la base de datos"
+                        }
+                    },
+                    "required":["nombre"]
+                }
+            }
+        },
+        {
+            "type":"function",
+            "function":{
+                "name":"buy_coint",
+                "description":"Compra monedas segun el nombre del simbolo de la moneda en el entorno de binance.",
+                "parameters":{
+                    "type":"object",
+                    "properties":{
+                        "symbol":{
+                            "type":"string",
+                            "description":"simbolo que representa el nombre de la moneda"
+                        },
+                        "quantity":{
+                            "type":"string",
+                            "description":"valor numerico que reprensenta la cantidad que se quiere comprar"
+                        }
+
+                    },
+                    "required":["symbol", "quantity"]
+                }
+            }
+        },
+        {
+            "type":"function",
+            "function":{
+                "name":"top_10",
+                "description":"""Funcion que devuelve el nombre y el volumen total las 10 monedas que tienen más actividad comercia en las ultimas 24 horas, 
+                basado en la confianza o interés en el mercado en negociar puediendo ofrecer mejores oportunidades de trading debido a su alta liquidez.""",
+                "parameters": { 
+                    "type": "object",
+                    "properties": {},  
+                    "required": [] 
+                }
+            }
+        },
+        {
+            "type":"function",
+            "function":{
+                "name":"get_transaction",
+                "description":"""Funcion que devuelve la ultima transaccion sobre una moneda en especifico, realizada por el usuario.""",
+                "parameters": { 
+                    "type": "object",
+                    "properties":{
+                        "symbol":{
+                            "type":"string",
+                            "description":"simbolo que representa el nombre de la moneda"
+                        }    
+                },
+                "required":["symbol"]
+                }
+            }
+        }
+    ]
+
+
+    chat = co.chat(
+        model=model_,
+        messages=[{"role":"system","content":"""Conviertete en un traiding bot, especializado en criptomonedas, capaz de poder ejecutar las funciones especializadas en comprar,
+                   vender, traer informacion sobre las compras o ventas realizadas, manejar informacion sobre las ultimas monedas del mercado actual y moestrar comprobante de pagos. Debes acatar la orden del usuario, siendo este el que te va indicar que acciones debes tomar."""},
+                   {"role":"user", "content":f"""{consulta}"""}],
+        tools=tools
+    )
+
+    for f in chat.message.tool_calls:
+        
+        print(f.function.name)
+       
+        function_name = f.function.name
+        function_arg = json.loads(f.function.arguments)
+        function_response = aviable_fuctions[function_name](**function_arg)
+
+            
+        chat_2 = co.chat(
+                model=model_,
+                messages=[{"role":"system", "content":"Eres un asistente virtual. Debes obligatoriamente confirmar la accion ejecutada"},
+                        {"role":"user", "content":f"{function_response}"}]
+            )
+
+        response_2 = chat_2.message.content[0].text
+
+        chat_3 = co.chat(
+                model=model_,
+                messages=[{"role":"system", "content":"""Eres un asistente virtual. Tu tarea es verificar si la accion del usuario fue una compra de monedas. Si confirmas que fue una compra,
+                           debes consultar si quiere que le muestres el la transaccion realizada. Para utilizar la funcion del get_transaction, debes tomar el symbolo que te dijo el usuario que compraras anteriormente, oero eso no le informes al usuario.
+                           Si confirmas que la accion no es una compra, seguir con la programacion habitual."""},
+                        {"role":"user", "content":f"{response_2}"}]
+            )
+
+        response = chat_3.message.content[0].text
+
+        return response
